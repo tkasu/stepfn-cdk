@@ -32,41 +32,39 @@ export class StepfnCdkStack extends Stack {
       outputPath: '$.Payload',
     });
 
+    const doNothingPass = new sfn.Pass(this, 'DoNothing');
+
     const defaultNamePass = new sfn.Pass(this, 'DefaultName', {
       result: sfn.Result.fromObject({'name': 'uknown'})
     });
+    const hasNoNameChoice = new sfn.Choice(this, 'HasNoName');
+    const hasNoNameCondition = sfn.Condition.isNotPresent("$.name");
 
-    const defaultBranchDefinition = defaultNamePass
-      .next(helloJob)
+    const upperJob = new tasks.LambdaInvoke(this, 'UpperJob', {
+      lambdaFunction: upperLambda,
+      outputPath: '$.Payload',
+    });
+    upperJob.addRetry({
+      errors: ["NoNameException"],
+      maxAttempts: 0,
+    });
+    upperJob.addRetry({
+      errors: ["States.ALL"],
+      maxAttempts: 3
+    });
 
-      const upperJob = new tasks.LambdaInvoke(this, 'UpperJob', {
-        lambdaFunction: upperLambda,
-        outputPath: '$.Payload',
-      });
-      upperJob.addRetry({
-        errors: ["NoNameException"],
-        maxAttempts: 0,
-      });
-      upperJob.addRetry({
-        errors: ["States.ALL"],
-        maxAttempts: 3
-      });
-      upperJob.addCatch(
-        defaultBranchDefinition,
-        { errors: ["NoNameException"] }
-      );
-
-    const mainBranchDefinition = upperJob
+    const definition = hasNoNameChoice
+      .when(hasNoNameCondition, defaultNamePass).otherwise(doNothingPass).afterwards()
+      .next(upperJob)
       .next(helloJob)
 
     new sfn.StateMachine(this, 'StateMachine', {
-      definition: mainBranchDefinition,
+      definition,
       timeout: Duration.minutes(1),
       logs: {
         destination: logGroup,
         level: sfn.LogLevel.ALL,
       }
     })
-
   }
 }
