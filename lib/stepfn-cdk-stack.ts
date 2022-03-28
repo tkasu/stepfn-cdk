@@ -17,14 +17,14 @@ export class StepfnCdkStack extends Stack {
       runtime: lambda.Runtime.PYTHON_3_9,
       index: 'handler.py',
       entry: path.join(__dirname, '..', 'lambda', 'upper-lambda'),
-      environment: { LOG_LEVEL: "DEBUG" },
+      environment: { LOG_LEVEL: 'DEBUG' },
     });
 
     const helloLambda = new pylambda.PythonFunction(this, 'HelloFunction', {
       runtime: lambda.Runtime.PYTHON_3_9,
       index: 'handler.py',
       entry: path.join(__dirname, '..', 'lambda', 'hello-lambda'),
-      environment: { LOG_LEVEL: "DEBUG" },
+      environment: { LOG_LEVEL: 'DEBUG' },
     });
 
     const helloJob = new tasks.LambdaInvoke(this, 'HelloJob', {
@@ -34,10 +34,10 @@ export class StepfnCdkStack extends Stack {
 
     const doNothingPass = new sfn.Pass(this, 'DoNothing');
 
-    const defaultNamePass = new sfn.Pass(this, 'DefaultName', {
-      result: sfn.Result.fromObject({'name': 'uknown'})
+    const defaultNamePass = new sfn.Pass(this, 'SetDefaultName', {
+      result: sfn.Result.fromObject({'name': 'unknown'})
     });
-    const hasNoNameChoice = new sfn.Choice(this, 'HasNoName');
+    const hasNoNameChoice = new sfn.Choice(this, 'HasNameCheck');
     const hasNoNameCondition = sfn.Condition.isNotPresent("$.name");
 
     const upperJob = new tasks.LambdaInvoke(this, 'UpperJob', {
@@ -45,17 +45,51 @@ export class StepfnCdkStack extends Stack {
       outputPath: '$.Payload',
     });
     upperJob.addRetry({
-      errors: ["NoNameException"],
+      errors: ['NoNameException'],
       maxAttempts: 0,
     });
     upperJob.addRetry({
-      errors: ["States.ALL"],
+      errors: ['States.ALL'],
       maxAttempts: 3
     });
 
-    const definition = hasNoNameChoice
+    const tempPass = new sfn.Pass(this, 'TempPass', {
+      result: sfn.Result.fromObject({'content': 'Simulated quote'})
+    });
+
+    const getQuoteLambda = new pylambda.PythonFunction(this, 'QuoteFunction', {
+      runtime: lambda.Runtime.PYTHON_3_9,
+      index: 'handler.py',
+      entry: path.join(__dirname, '..', 'lambda', 'get-quote-lambda'),
+      environment: { LOG_LEVEL: 'DEBUG' },
+    });
+
+    const getQuoteJob = new tasks.LambdaInvoke(this, 'QuoteJob', {
+      lambdaFunction: getQuoteLambda,
+      outputPath: '$.Payload',
+    });
+    getQuoteJob.addRetry({
+      errors: ["States.ALL"],
+      interval: Duration.seconds(1),
+      backoffRate: 3,
+      maxAttempts: 5,
+    });
+
+    const flattenAndRenameRes = new sfn.Pass(this, 'FlattenOutputs', {
+      parameters: {
+        "name.$": "$[0].name",
+        "quote.$": "$[1].quote",
+      }
+    });
+    const nameBranch = hasNoNameChoice
       .when(hasNoNameCondition, defaultNamePass).otherwise(doNothingPass).afterwards()
       .next(upperJob)
+
+    const parallel = new sfn.Parallel(this, 'ParallelExecution');
+    const definition = parallel
+      .branch(nameBranch)
+      .branch(getQuoteJob)
+      .next(flattenAndRenameRes)
       .next(helloJob)
 
     new sfn.StateMachine(this, 'StateMachine', {

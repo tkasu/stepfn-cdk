@@ -5,8 +5,12 @@ logger = Logger(service="hello")
 
 def handler(event, context):
     logger.debug(event)
-    if "name" in event:
-        name = event["name"]
-        return f"hello {name}"
-    else:
+
+    if not "name" in event:
         raise ValueError("No name property in the event.")
+    if not "quote" in event:
+        raise ValueError("No quote property in the event.")
+
+    name = event["name"]
+    quote = event["quote"]
+    return f"Hello {name}. {quote}"
