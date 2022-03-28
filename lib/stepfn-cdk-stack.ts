@@ -6,7 +6,6 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as pylambda from '@aws-cdk/aws-lambda-python-alpha';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
-import { StateTransitionMetric } from 'aws-cdk-lib/aws-stepfunctions';
 
 export class StepfnCdkStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -21,20 +20,6 @@ export class StepfnCdkStack extends Stack {
       environment: { LOG_LEVEL: "DEBUG" },
     });
 
-
-    const upperJob = new tasks.LambdaInvoke(this, 'UpperJob', {
-      lambdaFunction: upperLambda,
-      outputPath: '$.Payload',
-    });
-    upperJob.addRetry({
-      errors: ["NoNameException"],
-      maxAttempts: 0,
-    });
-    upperJob.addRetry({
-      errors: ["States.ALL"],
-      maxAttempts: 3,
-    });
-
     const helloLambda = new pylambda.PythonFunction(this, 'HelloFunction', {
       runtime: lambda.Runtime.PYTHON_3_9,
       index: 'handler.py',
@@ -47,11 +32,35 @@ export class StepfnCdkStack extends Stack {
       outputPath: '$.Payload',
     });
 
-    const definition = upperJob
+    const defaultNamePass = new sfn.Pass(this, 'DefaultName', {
+      result: sfn.Result.fromObject({'name': 'uknown'})
+    });
+
+    const defaultBranchDefinition = defaultNamePass
+      .next(helloJob)
+
+      const upperJob = new tasks.LambdaInvoke(this, 'UpperJob', {
+        lambdaFunction: upperLambda,
+        outputPath: '$.Payload',
+      });
+      upperJob.addRetry({
+        errors: ["NoNameException"],
+        maxAttempts: 0,
+      });
+      upperJob.addRetry({
+        errors: ["States.ALL"],
+        maxAttempts: 3
+      });
+      upperJob.addCatch(
+        defaultBranchDefinition,
+        { errors: ["NoNameException"] }
+      );
+
+    const mainBranchDefinition = upperJob
       .next(helloJob)
 
     new sfn.StateMachine(this, 'StateMachine', {
-      definition,
+      definition: mainBranchDefinition,
       timeout: Duration.minutes(1),
       logs: {
         destination: logGroup,

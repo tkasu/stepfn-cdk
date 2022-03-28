@@ -9,4 +9,4 @@ def handler(event, context):
         name = event["name"]
         return f"hello {name}"
     else:
-        return "hello for the uknown"
+        raise ValueError("No name property in the event.")
