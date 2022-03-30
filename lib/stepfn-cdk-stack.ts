@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { Stack, StackProps, Duration } from 'aws-cdk-lib';
+import { Stack, StackProps, Duration, CfnOutput } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
@@ -92,13 +92,18 @@ export class StepfnCdkStack extends Stack {
       .next(flattenAndRenameRes)
       .next(helloJob)
 
-    new sfn.StateMachine(this, 'StateMachine', {
+    const stateMachine = new sfn.StateMachine(this, 'StateMachine', {
       definition,
       timeout: Duration.minutes(1),
       logs: {
         destination: logGroup,
         level: sfn.LogLevel.ALL,
       }
-    })
+    });
+
+    new CfnOutput(this, 'StateMachineArnOutput', {
+      value: stateMachine.stateMachineArn,
+      exportName: 'StateMachineArn',
+    });
   }
 }
