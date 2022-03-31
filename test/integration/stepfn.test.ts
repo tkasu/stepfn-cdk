@@ -25,5 +25,5 @@ test('Happy path name given', async () => {
     const output = describeResult.output?.replace('"', '');
 
     // Hello with uppercased name + some content.
-    expect(output).toMatch(new RegExp('^Hello TESTUSER\. .{10,}'));
+    expect(output).toMatch(new RegExp('^Hello TESTUSER. .{10,}'));
 });

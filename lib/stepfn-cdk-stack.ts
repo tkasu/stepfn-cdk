@@ -53,10 +53,6 @@ export class StepfnCdkStack extends Stack {
       maxAttempts: 3
     });
 
-    const tempPass = new sfn.Pass(this, 'TempPass', {
-      result: sfn.Result.fromObject({'content': 'Simulated quote'})
-    });
-
     const getQuoteLambda = new pylambda.PythonFunction(this, 'QuoteFunction', {
       runtime: lambda.Runtime.PYTHON_3_9,
       index: 'handler.py',
