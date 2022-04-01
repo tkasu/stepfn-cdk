@@ -91,4 +91,3 @@ updateEnv().then(
     () => console.log(".env updated!"),
     err => { throw err; }
 );
-

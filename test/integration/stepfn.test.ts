@@ -1,11 +1,19 @@
 import 'dotenv/config';
 import * as sfn from '@aws-sdk/client-sfn';
 
-const sleep = (ms: number) => (
-    new Promise(resolve => setTimeout(resolve, ms))
-)
+function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
 
-test('Happy path name given', async () => {
+function getSfnResultOutput(res: sfn.DescribeExecutionCommandOutput): string {
+    const output = res.output;
+    if (!output) {
+        throw new Error(`No output in ${JSON.stringify(res)}.`);
+    }
+    return JSON.parse(output);
+}
+
+async function execAndGetSfnResult(input: string) {
     const client = new sfn.SFNClient({});
 
     const stateMachineArn = process.env.STATE_MACHINE_ARN;
@@ -15,7 +23,7 @@ test('Happy path name given', async () => {
 
     const executeCommand = new sfn.StartExecutionCommand({
         stateMachineArn: stateMachineArn,
-        input: JSON.stringify({'name': 'TestUser'}),
+        input: input,
     });
     const executeResult = await client.send(executeCommand);
 
@@ -26,14 +34,19 @@ test('Happy path name given', async () => {
     const describeExecutionCommand = new sfn.DescribeExecutionCommand({
         executionArn: executeResult.executionArn
     });
-    const describeResult = await client.send(describeExecutionCommand);
+    return await client.send(describeExecutionCommand);
+}
 
-    let output = describeResult.output;
-    if (!output) {
-        throw new Error(`No output in ${JSON.stringify(describeResult)}.`);
-    }
-    output = JSON.parse(output);
-
+test('Happy path name given', async () => {
+    const sfnExecResult = await execAndGetSfnResult(JSON.stringify({'name': 'TestUser'}));
+    const output = getSfnResultOutput(sfnExecResult);
     // Hello with uppercased name + some content.
     expect(output).toMatch(new RegExp('^Hello TESTUSER. .{10,}'));
+});
+
+test('Happy path no name given', async () => {
+    const sfnExecResult = await execAndGetSfnResult(JSON.stringify({'something': 'else'}));
+    const output = getSfnResultOutput(sfnExecResult);
+    // Hello with default name + some content.
+    expect(output).toMatch(new RegExp('^Hello UNKNOWN. .{10,}'));
 });
