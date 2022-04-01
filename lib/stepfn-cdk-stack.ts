@@ -3,6 +3,7 @@ import { Stack, StackProps, Duration, CfnOutput } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as nodelambda from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as pylambda from '@aws-cdk/aws-lambda-python-alpha';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as tasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
@@ -13,10 +14,8 @@ export class StepfnCdkStack extends Stack {
 
     const logGroup = new logs.LogGroup(this, 'StepfnCdkStackLogGroup');
 
-    const upperLambda = new pylambda.PythonFunction(this, 'UpperFunction', {
-      runtime: lambda.Runtime.PYTHON_3_9,
-      index: 'handler.py',
-      entry: path.join(__dirname, '..', 'lambda', 'upper-lambda'),
+    const upperLambda = new nodelambda.NodejsFunction(this, 'UpperFunction', {
+      entry: path.join(__dirname, '..', 'lambda', 'upper-lambda', 'index.ts'),
       environment: { LOG_LEVEL: 'DEBUG' },
     });
 
@@ -45,7 +44,7 @@ export class StepfnCdkStack extends Stack {
       outputPath: '$.Payload',
     });
     upperJob.addRetry({
-      errors: ['NoNameException'],
+      errors: ['NoNameError'],
       maxAttempts: 0,
     });
     upperJob.addRetry({
