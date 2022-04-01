@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import * as sfn from '@aws-sdk/client-sfn';
 
 const sleep = (ms: number) => (
@@ -7,10 +8,14 @@ const sleep = (ms: number) => (
 test('Happy path name given', async () => {
     const client = new sfn.SFNClient({});
 
-    // TODO FIX THIS, get output from arn and save to env
+    const stateMachineArn = process.env.STATE_MACHINE_ARN;
+    if (!stateMachineArn) {
+        throw new Error('STATE_MACHINE_ARN is not defined, try "npm run sync-env"')
+    }
+
     const executeCommand = new sfn.StartExecutionCommand({
-        stateMachineArn: "arn:aws:states:eu-west-1:972829804869:stateMachine:StateMachine2E01A3A5-6uIrqBwJjwe9",
-        input: JSON.stringify({"name": "TestUser"}),
+        stateMachineArn: stateMachineArn,
+        input: JSON.stringify({'name': 'TestUser'}),
     });
     const executeResult = await client.send(executeCommand);
 
@@ -22,7 +27,12 @@ test('Happy path name given', async () => {
         executionArn: executeResult.executionArn
     });
     const describeResult = await client.send(describeExecutionCommand);
-    const output = describeResult.output?.replace('"', '');
+
+    let output = describeResult.output;
+    if (!output) {
+        throw new Error(`No output in ${JSON.stringify(describeResult)}.`);
+    }
+    output = JSON.parse(output);
 
     // Hello with uppercased name + some content.
     expect(output).toMatch(new RegExp('^Hello TESTUSER. .{10,}'));

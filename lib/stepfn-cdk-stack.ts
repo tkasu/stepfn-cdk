@@ -97,9 +97,14 @@ export class StepfnCdkStack extends Stack {
       }
     });
 
+    const stateMachineArnOutputName = process.env.STATE_MACHINE_ARN_OUTPUT_NAME;
+    if (!stateMachineArnOutputName) {
+      throw new Error('STATE_MACHINE_ARN_OUTPUT_NAME env variable is not defined.')
+    }
+
     new CfnOutput(this, 'StateMachineArnOutput', {
       value: stateMachine.stateMachineArn,
-      exportName: 'StateMachineArn',
+      exportName: stateMachineArnOutputName,
     });
   }
 }

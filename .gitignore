@@ -380,3 +380,5 @@ package-lock.json
 yarn.lock
 .cdk.staging
 cdk.out
+bin/*.js
+bin/*.d.ts
