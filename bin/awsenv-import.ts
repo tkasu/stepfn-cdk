@@ -83,7 +83,6 @@ const updateEnv = async () => {
         const envVarName = outputConfigs[0].envOutputName;
         const updateProps = dotenvUpdatePropsFactory(envVarName, outputValue);
         await updateDotenv(updateProps);
-        console.log(".env updated!")
     }
 };
 

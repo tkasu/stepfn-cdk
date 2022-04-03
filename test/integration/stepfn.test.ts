@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import * as sfn from '@aws-sdk/client-sfn';
 
+jest.setTimeout(2 * 60 * 1000);
+
 function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms))
 }
@@ -27,14 +29,26 @@ async function execAndGetSfnResult(input: string) {
     });
     const executeResult = await client.send(executeCommand);
 
-    // Wait for stepfunctio exec
-    // Replace this with some loop?
-    await sleep(3000)
-
     const describeExecutionCommand = new sfn.DescribeExecutionCommand({
         executionArn: executeResult.executionArn
     });
-    return await client.send(describeExecutionCommand);
+
+    let execDescribe: sfn.DescribeExecutionCommandOutput;
+    for (let i = 0; i < 10; i++) {
+        execDescribe = await client.send(describeExecutionCommand);
+        const status = execDescribe.status;
+        switch (status) {
+            case 'RUNNING':
+                break; // continue to the next iteration
+            case 'SUCCEEDED':
+                return execDescribe;
+            default:
+                throw new Error(`Invalid exec status: ${status} in ${JSON.stringify(execDescribe)}`);
+        }
+        await sleep(10 * 1000);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    throw new Error(`Execution taking too long: ${JSON.stringify(execDescribe!)}`);
 }
 
 test('Happy path name given', async () => {

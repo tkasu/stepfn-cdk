@@ -9,7 +9,9 @@ aws-lambda-powertools==1.25.5
 aws-xray-sdk==2.9.0
     # via aws-lambda-powertools
 boto3==1.21.27
-    # via aws-lambda-powertools
+    # via
+    #   -r requirements.in
+    #   aws-lambda-powertools
 botocore==1.24.27
     # via
     #   aws-xray-sdk
