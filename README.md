@@ -39,6 +39,10 @@ Run integration tests:
 
 `run run test-integration`
 
-### Remove deployment
+## Linting
+
+`npm run lint`
+
+## Remove deployment
 
 `npx cdk destroy`
