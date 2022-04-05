@@ -168,10 +168,7 @@ export class StepfnCdkStack extends Stack {
     });
 
     // Stack outputs
-    const stateMachineArnOutputName = process.env.STATE_MACHINE_ARN_OUTPUT_NAME;
-    if (!stateMachineArnOutputName) {
-      throw new Error('STATE_MACHINE_ARN_OUTPUT_NAME env variable is not defined.')
-    }
+    const stateMachineArnOutputName = `${process.env.STACK_NAME}-statemachine-arn-output`
 
     new CfnOutput(this, 'StateMachineArnOutput', {
       value: stateMachine.stateMachineArn,

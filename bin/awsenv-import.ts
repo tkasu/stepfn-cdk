@@ -3,14 +3,12 @@ import 'dotenv/config';
 import * as updateDotenv from 'update-dotenv';
 import * as cfn from '@aws-sdk/client-cloudformation';
 
-const state_machine_arn_output_name = process.env.STATE_MACHINE_ARN_OUTPUT_NAME;
-if (!state_machine_arn_output_name) {
-    throw new Error('STATE_MACHINE_ARN_OUTPUT_NAME env variable is not defined.');
-}
 const stackName = process.env.STACK_NAME;
 if (!stackName) {
     throw new Error('STACK_NAME env variable is not defined.')
 }
+
+const state_machine_arn_output_name  = `${process.env.STACK_NAME}-statemachine-arn-output`;
 
 interface OutputConfig {
     exportName: string,
