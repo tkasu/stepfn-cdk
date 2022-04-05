@@ -37,8 +37,18 @@ export class StepfnCdkStack extends Stack {
     const getQuoteImage = new ecrassets.DockerImageAsset(this, 'GetQuoteImage', {
       directory: path.join(__dirname, '..', 'containers', 'get-quote'),
     });
-    const vpc = ec2.Vpc.fromLookup(this, 'Vpc', {
-      isDefault: true
+    const vpc = new ec2.Vpc(this, 'Vpc', {
+      maxAzs: 1,  // As this is for experimenting
+      subnetConfiguration: [
+        {
+          name: 'public',
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+        {
+          name: 'private',
+          subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
+        }
+      ]
     });
     const fargateCluster = new ecs.Cluster(this, 'FargateCluster', { vpc });
     const quoteFargateTask = new ecs.TaskDefinition(this, 'QuoteFargateTask', {
@@ -90,7 +100,7 @@ export class StepfnCdkStack extends Stack {
       timeout: Duration.minutes(2),
       cluster: fargateCluster,
       taskDefinition: quoteFargateTask,
-      assignPublicIp: true,
+      assignPublicIp: false,
       containerOverrides: [{
         containerDefinition: quoteContainer,
         environment: [
