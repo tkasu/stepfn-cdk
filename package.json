@@ -8,7 +8,7 @@
     "build": "tsc",
     "watch": "tsc -w",
     "lint": "eslint . --ext .ts,.tsx",
-    "test": "jest",
+    "test-infra": "jest test/cdk",
     "test-integration": "jest test/integration",
     "cdk": "cdk",
     "sync-env": "ts-node bin/awsenv-import.ts"
