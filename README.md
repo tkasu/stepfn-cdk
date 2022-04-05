@@ -9,7 +9,7 @@ The CDK app contains at least the following cases
 * State machine with parallel execution, branching and some retries
 * Typescript lambda step with dependencies, built and deployed with CDK
 * Python lambda step with dependencies, built and deployed with CDK
-* Fargate Step, deployed with CDK (uses ECR created by CDK bootrap)
+* Fargate Step, deployed with CDK (uses ECR created by CDK bootstrap)
 * Integration tests for the Step Function
 
 TODO Add step function graph with component icons.
@@ -38,3 +38,7 @@ Get State Machine ARN for integration test to your .env file:
 Run integration tests:
 
 `run run test-integration`
+
+### Remove deployment
+
+`npx cdk destroy`
